@@ -5,6 +5,11 @@
     return document.getElementById(id);
   }
 
+  function on(id, event, fn) {
+    var el = byId(id);
+    if (el) el.addEventListener(event, fn);
+  }
+
   var KEY_OPTIONS = [
     { value: "title", label: "title" },
     { value: "vendor", label: "vendor" },
@@ -226,10 +231,10 @@
   }
 
   function setLoading(loading) {
-    byId("submitBtn").disabled = loading;
-    byId("scrapePageBtn").disabled = loading;
-    var easyPeasyFetchBtn = byId("easyPeasyFetchBtn");
-    if (easyPeasyFetchBtn) easyPeasyFetchBtn.disabled = loading;
+    ["submitBtn", "scrapePageBtn", "easyPeasyFetchBtn"].forEach(function (id) {
+      var el = byId(id);
+      if (el) el.disabled = loading;
+    });
   }
 
   function getProductPageUrl(urlInput) {
@@ -316,51 +321,168 @@
 
   var STORE_BASE = "https://pixyls.ca";
 
+  /** Known launch / collection handles for the accordion list. Add more as needed. */
+  var KNOWN_COLLECTION_NAMES = [
+    "jan-25",
+    "april-25",
+    "y2k-mini-launch",
+    // "pixyls-christmas-2025",
+    "pets",
+    "winter-romance",
+    "east-asian-festival",
+  ];
+
   function resolveFetchUrl(urlInput) {
     const input = (urlInput || "").trim();
-    if (!input) return { url: "", singleProduct: false };
+    if (!input) return { url: "", singleProduct: false, collectionHandle: null };
     if (/^https?:\/\//i.test(input)) {
       var productMatch = input.match(/\/products\/([^\/\?#.]+)(?:\?|#|\/|$)/i);
       if (productMatch) {
         return {
           url: STORE_BASE + "/products/" + productMatch[1] + ".json",
-          singleProduct: true
+          singleProduct: true,
+          collectionHandle: null
         };
       }
-      return { url: normalizeUrl(input), singleProduct: false };
+      var collMatch = input.match(/\/collections\/([^\/\?#]+)/i);
+      return {
+        url: normalizeUrl(input),
+        singleProduct: false,
+        collectionHandle: collMatch ? collMatch[1] : null
+      };
     }
+    var handle = input.replace(/^\//, "");
     return {
-      url: STORE_BASE + "/collections/" + input.replace(/^\//, "") + "/products.json",
-      singleProduct: false
+      url: STORE_BASE + "/collections/" + handle + "/products.json",
+      singleProduct: false,
+      collectionHandle: handle
     };
   }
 
   function getData() {
     const urlInput = byId("url").value.trim();
     const pasteInput = byId("jsonPaste").value.trim();
+    if (urlInput) {
+      var resolved = resolveFetchUrl(urlInput);
+      return fetch(resolved.url).then(function (res) {
+        if (!res.ok) {
+          throw new Error("HTTP " + res.status + " " + res.statusText);
+        }
+        return res.json();
+      }).then(function (data) {
+        if (resolved.singleProduct && data.product) {
+          return { products: [data.product], collectionHandle: null };
+        }
+        return { products: data.products || [], collectionHandle: resolved.collectionHandle };
+      });
+    }
     if (pasteInput) {
       try {
-        return Promise.resolve(JSON.parse(pasteInput));
+        var data = JSON.parse(pasteInput);
+        return Promise.resolve({ products: data.products || [], collectionHandle: null });
       } catch (e) {
         throw new Error("Invalid JSON in paste area: " + e.message);
       }
     }
-    if (!urlInput) {
-      throw new Error("Enter a URL, collection name, or paste JSON.");
+    throw new Error("Enter a URL, collection name, or paste JSON.");
+  }
+
+  function getCollectionHandleForLinks(dataCollectionHandle) {
+    if (dataCollectionHandle) return dataCollectionHandle;
+    var el = byId("collectionNameForLinks");
+    return el ? (el.value || "").trim() : "";
+  }
+
+  function productUrl(product, collectionHandle) {
+    var handle = product.handle || "";
+    if (collectionHandle) {
+      return STORE_BASE + "/collections/" + collectionHandle + "/products/" + handle;
     }
-    var resolved = resolveFetchUrl(urlInput);
-    return fetch(resolved.url).then(function (res) {
-      if (!res.ok) {
-        throw new Error("HTTP " + res.status + " " + res.statusText);
+    return STORE_BASE + "/products/" + handle;
+  }
+
+  function renderProductPreview(products, collectionHandle) {
+    var container = byId("productPreview");
+    if (!container) return;
+    var coll = getCollectionHandleForLinks(collectionHandle);
+    container.innerHTML = "";
+    if (!products.length) {
+      container.classList.add("hidden");
+      return;
+    }
+    var heading = document.createElement("h2");
+    heading.className = "product-preview-title";
+    heading.textContent = "Product preview";
+    container.appendChild(heading);
+    var grid = document.createElement("div");
+    grid.className = "product-preview-grid";
+    products.forEach(function (p) {
+      var card = document.createElement("div");
+      card.className = "product-preview-card";
+      var imgSrc = (p.images && p.images[0] && p.images[0].src) ? p.images[0].src : "";
+      var link = document.createElement("a");
+      link.href = productUrl(p, coll);
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      link.className = "product-preview-link";
+      if (imgSrc) {
+        var img = document.createElement("img");
+        img.src = imgSrc;
+        img.alt = p.title || "";
+        img.className = "product-preview-img";
+        link.appendChild(img);
       }
-      return res.json();
-    }).then(function (data) {
-      if (resolved.singleProduct && data.product) {
-        return { products: [data.product] };
-      }
-      return data;
+      var titleEl = document.createElement("span");
+      titleEl.className = "product-preview-title-text";
+      titleEl.textContent = p.title || "";
+      link.appendChild(titleEl);
+      card.appendChild(link);
+      var productLink = document.createElement("a");
+      productLink.href = productUrl(p, coll);
+      productLink.target = "_blank";
+      productLink.rel = "noopener noreferrer";
+      productLink.className = "product-preview-product-link";
+      productLink.textContent = "View product →";
+      card.appendChild(productLink);
+      grid.appendChild(card);
+    });
+    container.appendChild(grid);
+    setProductPreviewVisible(false);
+  }
+
+  function setProductPreviewVisible(visible) {
+    var container = byId("productPreview");
+    var panel = byId("productPreviewPanel");
+    var btn = byId("showProductPreviewBtn");
+    if (!panel || !btn) return;
+    var hasContent = container && container.children.length > 0;
+    if (visible && hasContent) {
+      panel.classList.remove("hidden");
+      btn.textContent = "Hide product preview";
+      btn.setAttribute("aria-expanded", "true");
+    } else {
+      panel.classList.add("hidden");
+      btn.textContent = "Show product preview";
+      btn.setAttribute("aria-expanded", "false");
+    }
+  }
+
+  function renderKnownCollections() {
+    var listEl = byId("knownCollectionsList");
+    if (!listEl) return;
+    listEl.innerHTML = "";
+    KNOWN_COLLECTION_NAMES.forEach(function (handle) {
+      var a = document.createElement("a");
+      a.href = STORE_BASE + "/collections/" + encodeURIComponent(handle);
+      a.target = "_blank";
+      a.rel = "noopener noreferrer";
+      a.textContent = handle;
+      listEl.appendChild(a);
     });
   }
+
+  /** Order in which the user checked key checkboxes (used for column order when no preset). */
+  var selectedKeysCheckOrder = [];
 
   function getColumnOrder() {
     var selectedKeys = getSelectedKeys();
@@ -369,7 +491,9 @@
       var rest = selectedKeys.filter(function (k) { return preferredKeyOrder.indexOf(k) === -1; });
       return preferred.concat(rest);
     }
-    return selectedKeys;
+    var orderFromCheck = selectedKeysCheckOrder.filter(function (k) { return selectedKeys.indexOf(k) !== -1; });
+    var rest = selectedKeys.filter(function (k) { return orderFromCheck.indexOf(k) === -1; });
+    return orderFromCheck.concat(rest);
   }
 
   function run() {
@@ -389,15 +513,13 @@
         var firstOnly = byId("firstOnly").checked;
         var fullObjects = byId("fullObjects").checked;
         var imageSheetsFormula = byId("imageSheetsFormula").checked;
-        var availableKeys = Object.keys(products[0]);
 
         if (selectedKeys.length === 0) {
-          var lines = ["Found " + products.length + " products\n", "Available keys:"];
-          availableKeys.forEach(function (k) {
-            lines.push("  • " + k);
-          });
+          var titles = products.map(function (p) { return p.title || ""; });
+          var message = "This collection includes:\n\n" + titles.join("\n") + "\n\nSelect keys above to extract columns for Google Sheets.";
           byId("outputTitle").textContent = "Output";
-          renderOutput(lines.join("\n"));
+          renderOutput(message);
+          renderProductPreview(products, data.collectionHandle);
           setLoading(false);
           return;
         }
@@ -415,6 +537,7 @@
 
         function finish() {
           buildAndRenderTSV(columnOrder, valuesByKey, products.length);
+          renderProductPreview(products, data.collectionHandle);
           setLoading(false);
         }
 
@@ -445,21 +568,23 @@
           finish();
         }).catch(function (err) {
           showError(err.message || "Scrape failed. CORS may block cross-origin requests.");
-          byId("corsNote").classList.remove("hidden");
+          var corsNote = byId("corsNote"); if (corsNote) corsNote.classList.remove("hidden");
           setLoading(false);
         });
       })
       .catch(function (err) {
         showError(err.message || "Request failed.");
         if (err.message && err.message.indexOf("fetch") !== -1) {
-          byId("corsNote").classList.remove("hidden");
+          var corsNote = byId("corsNote"); if (corsNote) corsNote.classList.remove("hidden");
         }
         setLoading(false);
       });
   }
 
   function getSelectedKeys() {
-    var checkboxes = byId("keyCheckboxes").querySelectorAll("input[name=keySel]:checked");
+    var container = byId("keyCheckboxes");
+    if (!container) return [];
+    var checkboxes = container.querySelectorAll("input[name=keySel]:checked");
     var out = [];
     for (var i = 0; i < checkboxes.length; i++) {
       out.push(checkboxes[i].value);
@@ -469,13 +594,18 @@
 
   function updateKeyOptions() {
     var keys = getSelectedKeys();
+    var imagesSelected = keys.indexOf("images") !== -1;
     var showFirst = keys.some(function (k) { return ["images", "variants", "price"].indexOf(k) !== -1; });
     var showFull = keys.some(function (k) { return ["images", "variants"].indexOf(k) !== -1; });
-    var showSheets = keys.indexOf("images") !== -1;
-    byId("firstOnlyWrap").classList.toggle("hidden", !showFirst);
-    byId("fullObjectsWrap").classList.toggle("hidden", !showFull);
-    byId("imageSheetsWrap").classList.toggle("hidden", !showSheets);
-    byId("keyOptions").classList.toggle("hidden", !showFirst && !showFull && !showSheets);
+    var showSheets = imagesSelected;
+    var keyOptionsEl = byId("keyOptions");
+    if (keyOptionsEl) {
+      keyOptionsEl.classList.toggle("hidden", !imagesSelected);
+      keyOptionsEl.setAttribute("aria-hidden", imagesSelected ? "false" : "true");
+    }
+    var firstOnlyWrap = byId("firstOnlyWrap"); if (firstOnlyWrap) firstOnlyWrap.classList.toggle("hidden", !showFirst);
+    var fullObjectsWrap = byId("fullObjectsWrap"); if (fullObjectsWrap) fullObjectsWrap.classList.toggle("hidden", !showFull);
+    var imageSheetsWrap = byId("imageSheetsWrap"); if (imageSheetsWrap) imageSheetsWrap.classList.toggle("hidden", !showSheets);
   }
 
   function buildAndRenderTSV(selectedKeys, valuesByKey, productCount) {
@@ -506,6 +636,14 @@
     input.id = "key_" + opt.value;
     input.addEventListener("change", function () {
       preferredKeyOrder = null;
+      var val = input.value;
+      if (input.checked) {
+        if (selectedKeysCheckOrder.indexOf(val) === -1) {
+          selectedKeysCheckOrder.push(val);
+        }
+      } else {
+        selectedKeysCheckOrder = selectedKeysCheckOrder.filter(function (k) { return k !== val; });
+      }
       updateKeyOptions();
     });
     label.appendChild(input);
@@ -518,51 +656,64 @@
   });
   keyCheckboxesEl.appendChild(keyCheckboxesExtraEl);
 
-  byId("selectAllKeysBtn").addEventListener("click", function () {
+  on("selectAllKeysBtn", "click", function () {
     preferredKeyOrder = null;
     keyCheckboxesEl.querySelectorAll("input[name=keySel]").forEach(function (cb) { cb.checked = true; });
     updateKeyOptions();
   });
-  byId("clearKeysBtn").addEventListener("click", function () {
+  on("clearKeysBtn", "click", function () {
     preferredKeyOrder = null;
     keyCheckboxesEl.querySelectorAll("input[name=keySel]").forEach(function (cb) { cb.checked = false; });
     updateKeyOptions();
   });
-  byId("easyPeasyBtn").addEventListener("click", function () {
+  on("easyPeasyBtn", "click", function () {
     preferredKeyOrder = EASY_PEASY_KEYS.slice();
     keyCheckboxesEl.querySelectorAll("input[name=keySel]").forEach(function (cb) {
       cb.checked = EASY_PEASY_KEYS.indexOf(cb.value) !== -1;
     });
-    byId("firstOnly").checked = true;
-    byId("imageSheetsFormula").checked = true;
+    var fo = byId("firstOnly"); if (fo) fo.checked = true;
+    var isf = byId("imageSheetsFormula"); if (isf) isf.checked = true;
     updateKeyOptions();
   });
 
-  byId("showMoreKeysBtn").addEventListener("click", function () {
+  on("showMoreKeysBtn", "click", function () {
     var extra = byId("keyCheckboxesExtra");
     var btn = byId("showMoreKeysBtn");
-    extra.classList.toggle("hidden");
-    btn.textContent = extra.classList.contains("hidden") ? "Show more keys" : "Hide extra keys";
+    if (extra && btn) {
+      extra.classList.toggle("hidden");
+      btn.textContent = extra.classList.contains("hidden") ? "Show more keys" : "Hide extra keys";
+    }
   });
 
-  byId("form").addEventListener("submit", function (e) {
-    e.preventDefault();
-    run(false);
+  on("showProductPreviewBtn", "click", function () {
+    var panel = byId("productPreviewPanel");
+    var isExpanded = panel && !panel.classList.contains("hidden");
+    setProductPreviewVisible(!isExpanded);
   });
 
-  byId("easyPeasyFetchBtn").addEventListener("click", function (e) {
+  var form = byId("form");
+  if (form) {
+    form.addEventListener("submit", function (e) {
+      e.preventDefault();
+      run(false);
+    });
+  }
+
+  on("easyPeasyFetchBtn", "click", function (e) {
     e.preventDefault();
     preferredKeyOrder = EASY_PEASY_KEYS.slice();
     keyCheckboxesEl.querySelectorAll("input[name=keySel]").forEach(function (cb) {
       cb.checked = EASY_PEASY_KEYS.indexOf(cb.value) !== -1;
     });
-    byId("firstOnly").checked = true;
-    byId("imageSheetsFormula").checked = true;
+    var firstOnly = byId("firstOnly");
+    if (firstOnly) firstOnly.checked = true;
+    var imageSheetsFormula = byId("imageSheetsFormula");
+    if (imageSheetsFormula) imageSheetsFormula.checked = true;
     updateKeyOptions();
     run(false);
   });
 
-  byId("scrapePageBtn").addEventListener("click", function () {
+  on("scrapePageBtn", "click", function () {
     clearError();
     var urlInput = byId("url").value.trim();
     var pageUrl = getProductPageUrl(urlInput);
@@ -595,7 +746,7 @@
       })
       .catch(function (err) {
         showError(err.message || "Scrape failed. If you see a CORS or network error, the site may block cross-origin requests.");
-        byId("corsNote").classList.remove("hidden");
+        var corsNote = byId("corsNote"); if (corsNote) corsNote.classList.remove("hidden");
       })
       .then(function () {
         setLoading(false);
@@ -604,7 +755,7 @@
 
   updateKeyOptions();
 
-  byId("usePasteBtn").addEventListener("click", function () {
+  on("usePasteBtn", "click", function () {
     clearError();
     var pasteInput = byId("jsonPaste").value.trim();
     if (!pasteInput) {
@@ -630,10 +781,11 @@
     var availableKeys = Object.keys(products[0]);
 
     if (selectedKeys.length === 0) {
-      var lines = ["Found " + products.length + " products\n", "Available keys:"];
-      availableKeys.forEach(function (k) { lines.push("  • " + k); });
+      var titles = products.map(function (p) { return p.title || ""; });
+      var message = "This collection includes:\n\n" + titles.join("\n") + "\n\nSelect keys above to extract columns for Google Sheets.";
       byId("outputTitle").textContent = "Output";
-      renderOutput(lines.join("\n"));
+      renderOutput(message);
+      renderProductPreview(products, null);
       return;
     }
 
@@ -651,6 +803,7 @@
 
     function finish() {
       buildAndRenderTSV(columnOrder, valuesByKey, products.length);
+      renderProductPreview(products, null);
       setLoading(false);
     }
 
@@ -681,12 +834,12 @@
       finish();
     }).catch(function (err) {
       showError(err.message || "Scrape failed. CORS may block cross-origin requests.");
-      byId("corsNote").classList.remove("hidden");
+      var corsNote = byId("corsNote"); if (corsNote) corsNote.classList.remove("hidden");
       setLoading(false);
     });
   });
 
-  byId("copyBtn").addEventListener("click", function () {
+  on("copyBtn", "click", function () {
     var pre = byId("result");
     if (!navigator.clipboard || !navigator.clipboard.writeText) {
       return;
@@ -701,5 +854,21 @@
         }, 1500);
       }
     );
+  });
+
+  renderKnownCollections();
+  on("knownCollectionsAccordionBtn", "click", function () {
+    var btn = byId("knownCollectionsAccordionBtn");
+    var panel = byId("knownCollectionsPanel");
+    var isExpanded = btn.getAttribute("aria-expanded") === "true";
+    btn.setAttribute("aria-expanded", !isExpanded);
+    panel.classList.toggle("hidden", isExpanded);
+  });
+  on("pasteAccordionBtn", "click", function () {
+    var btn = byId("pasteAccordionBtn");
+    var panel = byId("pasteAccordionPanel");
+    var isExpanded = btn.getAttribute("aria-expanded") === "true";
+    btn.setAttribute("aria-expanded", !isExpanded);
+    panel.classList.toggle("hidden", isExpanded);
   });
 })();
