@@ -1,58 +1,65 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Shopify Product JSON Extractor</title>
+  <title>Pixyls to Google Sheets!</title>
   <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
   <div class="container">
     <header>
-      <h1>Shopify Product JSON Extractor</h1>
-      <p class="subtitle">Enter a Shopify collection URL or paste JSON to extract product keys (e.g. images, variants).</p>
+      <h1>Pixyls to Google Sheets!</h1>
+      <p class="subtitle">Enter a Shopify collection URL or paste JSON to extract product keys (e.g. images, variants).
+      </p>
     </header>
 
     <form id="form" class="form">
       <div class="field">
-        <label for="url">Collection or products.json URL</label>
-        <input type="url" id="url" name="url" placeholder="https://example.myshopify.com/collections/your-collection" autocomplete="url">
+        <label for="url">Collection URL, product URL, or collection name</label>
+        <input type="text" id="url" name="url" placeholder="e.g. collection-handle or full product/collection URL"
+          autocomplete="url">
+        <div class="url-actions">
+          <button type="button" id="easyPeasyFetchBtn" class="btn-primary">Easy-peasy</button>
+        </div>
       </div>
       <div class="field">
-        <label for="key">Key to extract (optional — leave blank to only list keys)</label>
-        <input type="text" id="key" name="key" placeholder="e.g. images, variants, title" list="key-suggestions">
-        <datalist id="key-suggestions">
-          <option value="images">
-          <option value="variants">
-          <option value="title">
-          <option value="handle">
-          <option value="id">
-        </datalist>
+        <label>Keys to extract (select one or more — columns in output)</label>
+        <div class="key-select-actions">
+          <button type="button" id="selectAllKeysBtn" class="link-btn">Select all</button>
+          <button type="button" id="clearKeysBtn" class="link-btn">Clear</button>
+          <button type="button" id="easyPeasyBtn" class="link-btn easy-peasy-btn">easy-peasy</button>
+          <button type="button" id="showMoreKeysBtn" class="link-btn">Show more keys</button>
+        </div>
+        <div id="keyCheckboxes" class="key-checkboxes"></div>
       </div>
-      <div class="options">
-        <label class="checkbox">
+      <div class="options" id="keyOptions">
+        <label class="checkbox key-option key-option-first" id="firstOnlyWrap">
           <input type="checkbox" id="firstOnly" name="firstOnly">
           <span>First only</span>
         </label>
-        <label class="checkbox">
+        <label class="checkbox key-option key-option-full" id="fullObjectsWrap">
           <input type="checkbox" id="fullObjects" name="fullObjects">
           <span>Full objects (for images/variants)</span>
+        </label>
+        <label class="checkbox key-option key-option-sheets" id="imageSheetsWrap">
+          <input type="checkbox" id="imageSheetsFormula" name="imageSheetsFormula">
+          <span>Google Sheets =IMAGE("url", 1)</span>
         </label>
       </div>
       <div class="actions">
         <button type="submit" id="submitBtn">Fetch & extract</button>
-        <button type="button" id="listKeysBtn">List keys only</button>
+        <button type="button" id="scrapePageBtn">Individual kit page</button>
       </div>
     </form>
+    <p class="scrape-hint" id="scrapeHint">Scrape product page: fetches the live HTML and extracts sections (About this
+      Kit, What's Inside, etc.). Only for product URLs. May be blocked by CORS if the site disallows it.</p>
 
     <div id="corsNote" class="note hidden">
-      If the request fails due to CORS, the store may block cross-origin requests. Try running the <a href="https://github.com/your-repo/p.py">Python script</a> locally, or use a CORS proxy and paste the JSON below.
-    </div>
-
-    <div class="paste-section">
-      <label for="jsonPaste">Or paste products JSON here (object with <code>products</code> array)</label>
-      <textarea id="jsonPaste" name="jsonPaste" rows="4" placeholder='{"products": [...]}'></textarea>
-      <button type="button" id="usePasteBtn">Use pasted JSON</button>
+      If the request fails due to CORS, the store may block cross-origin requests. Paste the JSON below instead (open
+      the collection URL + <code>/products.json</code> in your browser, copy, then paste here).
     </div>
 
     <section id="output" class="output hidden">
@@ -63,8 +70,15 @@
       <pre id="result"></pre>
     </section>
 
+    <div class="paste-section">
+      <label for="jsonPaste">Or paste products JSON here (object with <code>products</code> array)</label>
+      <textarea id="jsonPaste" name="jsonPaste" rows="4" placeholder='{"products": [...]}'></textarea>
+      <button type="button" id="usePasteBtn">Use pasted JSON</button>
+    </div>
+
     <div id="error" class="error hidden"></div>
   </div>
   <script src="main.js"></script>
 </body>
+
 </html>
