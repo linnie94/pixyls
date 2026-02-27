@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Shopify Product JSON Extractor</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Shopify Product JSON Extractor</h1>
+      <p class="subtitle">Enter a Shopify collection URL or paste JSON to extract product keys (e.g. images, variants).</p>
+    </header>
+
+    <form id="form" class="form">
+      <div class="field">
+        <label for="url">Collection or products.json URL</label>
+        <input type="url" id="url" name="url" placeholder="https://example.myshopify.com/collections/your-collection" autocomplete="url">
+      </div>
+      <div class="field">
+        <label for="key">Key to extract (optional — leave blank to only list keys)</label>
+        <input type="text" id="key" name="key" placeholder="e.g. images, variants, title" list="key-suggestions">
+        <datalist id="key-suggestions">
+          <option value="images">
+          <option value="variants">
+          <option value="title">
+          <option value="handle">
+          <option value="id">
+        </datalist>
+      </div>
+      <div class="options">
+        <label class="checkbox">
+          <input type="checkbox" id="firstOnly" name="firstOnly">
+          <span>First only</span>
+        </label>
+        <label class="checkbox">
+          <input type="checkbox" id="fullObjects" name="fullObjects">
+          <span>Full objects (for images/variants)</span>
+        </label>
+      </div>
+      <div class="actions">
+        <button type="submit" id="submitBtn">Fetch & extract</button>
+        <button type="button" id="listKeysBtn">List keys only</button>
+      </div>
+    </form>
+
+    <div id="corsNote" class="note hidden">
+      If the request fails due to CORS, the store may block cross-origin requests. Try running the <a href="https://github.com/your-repo/p.py">Python script</a> locally, or use a CORS proxy and paste the JSON below.
+    </div>
+
+    <div class="paste-section">
+      <label for="jsonPaste">Or paste products JSON here (object with <code>products</code> array)</label>
+      <textarea id="jsonPaste" name="jsonPaste" rows="4" placeholder='{"products": [...]}'></textarea>
+      <button type="button" id="usePasteBtn">Use pasted JSON</button>
+    </div>
+
+    <section id="output" class="output hidden">
+      <div class="output-header">
+        <h2 id="outputTitle">Output</h2>
+        <button type="button" id="copyBtn" class="secondary">Copy text</button>
+      </div>
+      <pre id="result"></pre>
+    </section>
+
+    <div id="error" class="error hidden"></div>
+  </div>
+  <script src="main.js"></script>
+</body>
+</html>
