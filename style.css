@@ -56,7 +56,8 @@ h1 {
 
 input[type="url"],
 input[type="text"],
-textarea {
+textarea,
+select {
   padding: 0.5rem 0.75rem;
   border: 1px solid #ccc;
   border-radius: 6px;
@@ -64,8 +65,14 @@ textarea {
   font-family: inherit;
 }
 
+select {
+  cursor: pointer;
+  min-width: 12rem;
+}
+
 input:focus,
-textarea:focus {
+textarea:focus,
+select:focus {
   outline: none;
   border-color: #0066cc;
   box-shadow: 0 0 0 2px rgba(0, 102, 204, 0.2);
@@ -80,6 +87,80 @@ textarea {
   display: flex;
   flex-wrap: wrap;
   gap: 1rem;
+}
+
+.key-option.hidden {
+  display: none !important;
+}
+
+.key-select-actions {
+  margin-bottom: 0.5rem;
+}
+
+.link-btn {
+  background: none;
+  border: none;
+  color: #0066cc;
+  cursor: pointer;
+  font-size: 0.9rem;
+  padding: 0;
+  margin-right: 1rem;
+}
+
+.link-btn:hover {
+  text-decoration: underline;
+}
+
+.easy-peasy-btn {
+  font-weight: 600;
+}
+
+.url-actions {
+  margin-top: 0.5rem;
+}
+
+.btn-primary {
+  padding: 0.5rem 1rem;
+  font-size: 0.95rem;
+  font-weight: 500;
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: inherit;
+  background: #0066cc;
+  color: #fff;
+  border: 1px solid #0066cc;
+}
+
+.btn-primary:hover {
+  background: #0052a3;
+}
+
+.btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.key-checkboxes {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr));
+  gap: 0.35rem 1.5rem;
+  max-height: 12rem;
+  overflow-y: auto;
+  padding: 0.5rem 0;
+}
+
+.key-checkboxes-extra {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr));
+  gap: 0.35rem 1.5rem;
+  grid-column: 1 / -1;
+  /* margin-top: 0.5rem; */
+  padding-top: 0.5rem;
+  border-top: 1px solid #eee;
+}
+
+.key-checkboxes-extra.hidden {
+  display: none;
 }
 
 .checkbox {
@@ -99,6 +180,22 @@ textarea {
   display: flex;
   gap: 0.75rem;
   flex-wrap: wrap;
+}
+
+.scrape-hint {
+  margin: 0.5rem 0 0 0;
+  font-size: 0.85rem;
+  color: #555;
+}
+
+#scrapePageBtn {
+  background: #2d6a2d;
+  color: #fff;
+  border-color: #2d6a2d;
+}
+
+#scrapePageBtn:hover {
+  background: #245024;
 }
 
 button {
