@@ -11,25 +11,24 @@
   }
 
   var KEY_OPTIONS = [
-    { value: "title", label: "title" },
-    { value: "vendor", label: "vendor" },
-    { value: "product_type", label: "product_type" },
-    { value: "price", label: "price" },
-    { value: "images", label: "images" },
-    { value: "number_of_stickers", label: "number_of_stickers" },
-    { value: "product_size", label: "product_size" },
+    { value: "title", label: "Name" },
+    { value: "vendor", label: "Vendor" },
+    { value: "product_type", label: "Product Type" },
+    { value: "product_size", label: "Product Size" },
+    { value: "price", label: "Price" },
+    { value: "images", label: "img" },
+    { value: "number_of_stickers", label: "# of Stickers" },
+    { value: "number_of_colors", label: "# of Colors" },
     { value: "body_html", label: "body_html", hidden: true },
     { value: "created_at", label: "created_at" },
-    { value: "handle", label: "handle", hidden: true },
-    { value: "id", label: "id", hidden: true },
+    { value: "handle", label: "url handle", hidden: true },
     { value: "updated_at", label: "updated_at", hidden: true },
     { value: "published_at", label: "published_at", hidden: true },
     { value: "options", label: "options", hidden: true },
-    { value: "tags", label: "tags", hidden: true },
-    { value: "variants", label: "variants", hidden: true }
+    { value: "tags", label: "tags", hidden: true }
   ];
 
-  var SCRAPE_KEYS = ["number_of_stickers", "product_size"];
+  var SCRAPE_KEYS = ["number_of_stickers", "product_size", "number_of_colors"];
 
   var EASY_PEASY_KEYS = ["images", "title", "price", "number_of_stickers"];
   var preferredKeyOrder = null;
@@ -330,6 +329,8 @@
     "pets",
     "winter-romance",
     "east-asian-festival",
+    "spring-bloom",
+    "cozy-farm-launch",
   ];
 
   function resolveFetchUrl(urlInput) {
@@ -558,6 +559,9 @@
             }
             if (scrapeKeys.indexOf("product_size") !== -1) {
               row.product_size = getSizeFromScrapedHtml(html, p.vendor);
+            }
+            if (scrapeKeys.indexOf("number_of_colors") !== -1) {
+              row.number_of_colors = getNumberOfColorsFromScrapedHtml(html, p.vendor);
             }
             return row;
           });
