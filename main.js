@@ -110,6 +110,13 @@
     return match ? match[1].trim() : "[Not found]";
   }
 
+  function getNumberOfColorsFromScrapedHtml(html, vendor) {
+    var body = getKitSectionBody(html, vendor);
+    if (!body) return "[Not found]";
+    var match = body.match(/(\d+)\s*colours?/i);
+    return match ? match[1] : "[Not found]";
+  }
+
   function extractKeyValues(products, keyName, firstOnly, fullObjects) {
     const values = [];
     for (const product of products) {
