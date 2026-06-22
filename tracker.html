@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>My Pixyls Collection</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #f5f5f0; color: #1a1a1a; font-size: 14px; }
+  nav { background: #fff; border-bottom: 1px solid #e8e8e8; padding: 0 24px; display: flex; align-items: center; justify-content: space-between; height: 52px; position: sticky; top: 0; z-index: 10; }
+  nav .logo { font-weight: 600; font-size: 15px; }
+  nav .links { display: flex; gap: 8px; }
+  nav button { background: none; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 13px; color: #666; }
+  nav button.active { background: #f0f0ec; color: #1a1a1a; font-weight: 500; }
+  .page { display: none; padding: 24px; max-width: 1100px; margin: 0 auto; }
+  .page.active { display: block; }
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px; }
+  .stat { background: #fff; border-radius: 10px; padding: 16px; border: 1px solid #e8e8e8; }
+  .stat-label { font-size: 11px; color: #999; margin-bottom: 4px; }
+  .stat-value { font-size: 20px; font-weight: 600; }
+  .stat-sub { font-size: 11px; color: #bbb; margin-top: 2px; }
+  h2 { font-size: 14px; font-weight: 600; margin-bottom: 12px; }
+  .section { margin-bottom: 28px; }
+  .grid-4 { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 12px; }
+  .grid-3 { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
+  .card { background: #fff; border-radius: 10px; border: 1px solid #e8e8e8; overflow: hidden; cursor: pointer; transition: border-color 0.15s; }
+  .card:hover { border-color: #bbb; }
+  .card.selected { border-color: #1a1a1a; border-width: 2px; }
+  .card-img { width: 100%; height: 120px; object-fit: cover; display: block; }
+  .card-img-placeholder { width: 100%; height: 120px; background: #f0f0ec; display: flex; align-items: center; justify-content: center; font-size: 28px; }
+  .card-body { padding: 10px 12px; }
+  .card-name { font-size: 12px; font-weight: 500; margin-bottom: 3px; line-height: 1.4; }
+  .card-meta { font-size: 11px; color: #999; margin-bottom: 7px; }
+  .bar-wrap { height: 4px; background: #f0f0ec; border-radius: 2px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 2px; }
+  .coll-banner { height: 80px; background: #e8e8e0; display: flex; align-items: flex-end; padding: 8px 12px; }
+  .pill { font-size: 10px; background: rgba(255,255,255,0.85); border-radius: 20px; padding: 2px 8px; color: #555; }
+  .badge { display: inline-block; font-size: 10px; padding: 2px 7px; border-radius: 20px; }
+  .badge-done      { background: #e8f5e9; color: #2e7d32; }
+  .badge-prog      { background: #fff8e1; color: #e65100; }
+  .badge-unstarted { background: #e3f2fd; color: #1565c0; }
+  .badge-no        { background: #f5f5f5; color: #999; }
+  .tag-pill { display: inline-block; font-size: 10px; background: #f0f0ec; border-radius: 20px; padding: 2px 8px; margin: 2px 2px 2px 0; color: #555; }
+  .log-row { display: flex; align-items: center; gap: 12px; padding: 10px 14px; background: #fff; border-radius: 8px; border: 1px solid #e8e8e8; margin-bottom: 8px; font-size: 12px; }
+  .dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+  .dot-g { background: #4caf50; } .dot-a { background: #ff9800; }
+  .log-name { flex: 1; font-weight: 500; }
+  .log-time { color: #999; }
+  .log-dur { font-weight: 600; min-width: 44px; text-align: right; }
+  .log-status { font-size: 10px; padding: 2px 8px; border-radius: 20px; }
+  .s-done { background: #e8f5e9; color: #2e7d32; }
+  .s-pause { background: #fff8e1; color: #e65100; }
+  .s-prog { background: #e3f2fd; color: #1565c0; }
+  .launch-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; background: #fff; border-radius: 8px; border: 1px solid #e8e8e8; margin-bottom: 8px; }
+  .launch-row:hover { border-color: #bbb; }
+  .launch-row.selected { border-color: #1a1a1a; border-width: 2px; }
+  .launch-name { font-size: 13px; font-weight: 500; }
+  .launch-date { font-size: 12px; color: #999; }
+  .filter-row { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+  .filter-btn { background: #fff; border: 1px solid #e8e8e8; border-radius: 20px; padding: 5px 12px; font-size: 12px; cursor: pointer; }
+  .filter-btn.on { background: #1a1a1a; color: #fff; border-color: #1a1a1a; }
+  input[type=text] { width: 100%; padding: 8px 12px; border: 1px solid #e8e8e8; border-radius: 8px; font-size: 13px; margin-bottom: 14px; outline: none; background: #fff; }
+  input[type=text]:focus { border-color: #bbb; }
+  .home-layout { display: flex; gap: 20px; align-items: flex-start; }
+  .home-main { flex: 1; min-width: 0; }
+  .detail-panel { width: 300px; flex-shrink: 0; background: #fff; border: 1px solid #e8e8e8; border-radius: 12px; overflow: hidden; position: sticky; top: 72px; display: none; max-height: calc(100vh - 90px); overflow-y: auto; }
+  .detail-panel.open { display: block; }
+  .detail-img { width: 100%; height: 180px; object-fit: cover; background: #f0f0ec; }
+  .detail-img-placeholder { width: 100%; height: 180px; background: #f0f0ec; display: flex; align-items: center; justify-content: center; font-size: 48px; }
+  .detail-body { padding: 16px; }
+  .detail-name { font-size: 15px; font-weight: 600; margin-bottom: 4px; line-height: 1.4; }
+  .detail-vendor { font-size: 12px; color: #999; margin-bottom: 12px; }
+  .detail-close { float: right; background: none; border: none; font-size: 18px; cursor: pointer; color: #999; margin: -4px -4px 0 0; }
+  .detail-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid #f5f5f0; font-size: 12px; }
+  .detail-row:last-child { border-bottom: none; }
+  .detail-key { color: #999; }
+  .detail-val { font-weight: 500; text-align: right; max-width: 180px; word-break: break-word; }
+  .detail-section-title { font-size: 11px; font-weight: 600; color: #999; text-transform: uppercase; letter-spacing: 0.5px; margin: 14px 0 8px; }
+  .detail-link { display: block; text-align: center; padding: 8px; margin-top: 12px; background: #f5f5f0; border-radius: 8px; font-size: 12px; color: #1a1a1a; text-decoration: none; }
+  .detail-link:hover { background: #e8e8e0; }
+  .detail-back { display: flex; align-items: center; gap: 6px; padding: 10px 16px; border-bottom: 1px solid #f0f0ec; font-size: 12px; color: #666; cursor: pointer; background: #fafafa; }
+  .detail-back:hover { background: #f0f0ec; }
+  .prod-row { display: flex; align-items: center; gap: 8px; padding: 7px 0; border-bottom: 0.5px solid #f5f5f0; cursor: pointer; }
+  .prod-row:hover { background: #fafafa; margin: 0 -16px; padding-left: 16px; padding-right: 16px; }
+  .prod-row:last-child { border-bottom: none; }
+  .prod-thumb { width: 30px; height: 30px; border-radius: 4px; overflow: hidden; flex-shrink: 0; background: #f0f0ec; display: flex; align-items: center; justify-content: center; font-size: 14px; }
+  .prod-thumb img { width: 100%; height: 100%; object-fit: cover; }
+  #loading { display: flex; align-items: center; justify-content: center; height: 60vh; flex-direction: column; gap: 12px; color: #999; font-size: 13px; }
+  .spinner { width: 28px; height: 28px; border: 3px solid #e8e8e8; border-top-color: #1a1a1a; border-radius: 50%; animation: spin 0.7s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  #error-msg { display: none; padding: 24px; text-align: center; color: #c00; font-size: 13px; }
+</style>
+</head>
+<body>
+<nav>
+  <span class="logo">🌸 my pixyls</span>
+  <div class="links">
+    <button class="active" onclick="show('home',this)">collection</button>
+    <button onclick="show('collections',this)">collections</button>
+    <button onclick="show('launches',this)">launches</button>
+    <button onclick="show('worklog',this)">worklog</button>
+  </div>
+</nav>
+
+<div id="loading"><div class="spinner"></div>loading collection…</div>
+<div id="error-msg"></div>
+
+<div id="home" class="page"></div>
+<div id="collections" class="page"></div>
+<div id="launches" class="page"></div>
+<div id="worklog" class="page"></div>
+
+<script>
+// ── CONFIG — paste your Apps Script /exec URL here ──────────────
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxEs7f660GKDNGV9VyD8SKaS2j5k6rMN0DE841gjA-9HFSVT6E1YpZLQmEyD4eoBkMQiA/exec';
+// ────────────────────────────────────────────────────────────────
+
+let DATA = null;
+
+async function init() {
+  try {
+    const res = await fetch(SCRIPT_URL);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    DATA = await res.json();
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('home').classList.add('active');
+    renderHome();
+    renderCollections();
+    renderLaunches();
+    renderWorklog();
+  } catch (err) {
+    document.getElementById('loading').style.display = 'none';
+    const el = document.getElementById('error-msg');
+    el.style.display = 'block';
+    el.textContent = `Failed to load data: ${err.message}. Make sure SCRIPT_URL is set correctly.`;
+  }
+}
+
+function show(id, btn) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  if (btn) btn.classList.add('active');
+  closeDetail();
+}
+
+function pct(handle) {
+  const p = DATA.progressMap[handle];
+  if (!p) return 0;
+  return parseInt(p.pct) || 0;
+}
+
+function barColor(n) {
+  if (n >= 100) return '#4caf50';
+  if (n > 0)    return '#ff9800';
+  return '#e0e0e0';
+}
+
+function owned(handle) { return handle in DATA.progressMap; }
+
+function badgeLabel(handle) {
+  if (!owned(handle)) return { label: 'not owned', cls: 'badge-no' };
+  const n = pct(handle);
+  if (n >= 100) return { label: 'finished',    cls: 'badge-done' };
+  if (n > 0)    return { label: n + '%',        cls: 'badge-prog' };
+  return               { label: 'not started', cls: 'badge-unstarted' };
+}
+
+// ── Detail panel ────────────────────────────────────────────────
+let selectedHandle = null;
+let detailBackCtx  = null;
+
+function openDetailFromCtx(productHandle, ctxType, ctxHandle, ctxName) {
+  detailBackCtx = { type: ctxType, handle: ctxHandle, name: ctxName };
+  openDetail(productHandle);
+}
+
+function openDetail(handle) {
+  const p = DATA.products.find(x => x.handle === handle);
+  if (!p) return;
+  selectedHandle = handle;
+  document.querySelectorAll('[data-handle]').forEach(c => c.classList.remove('selected'));
+  document.querySelectorAll(`[data-handle="${handle}"]`).forEach(c => c.classList.add('selected'));
+
+  const panelId = detailBackCtx
+    ? (detailBackCtx.type === 'collection' ? 'coll-detail-panel' : 'launch-detail-panel')
+    : 'detail-panel';
+  const panel = document.getElementById(panelId) || document.getElementById('detail-panel');
+  panel.classList.add('open');
+
+  const n          = pct(handle);
+  const b          = badgeLabel(handle);
+  const pSessions  = DATA.allSessions.filter(s => s.handle === handle || s.product === p.name).reverse();
+  const totalMins  = pSessions.reduce((acc, s) => acc + parseDuration(s.duration), 0);
+  const launch     = DATA.launches.find(l => p.tags && p.tags.toLowerCase().includes(l.handle));
+  const coll       = DATA.collections.find(c => p.tags && p.tags.toLowerCase().includes(c.handle));
+
+  let sessionsHtml = '';
+  if (pSessions.length) {
+    const isFinished = n >= 100;
+    const sorted     = pSessions.slice().sort((a, b) => {
+      const da = new Date(a.date), db = new Date(b.date);
+      return isNaN(da) || isNaN(db) ? a.date.localeCompare(b.date) : da - db;
+    });
+    if (isFinished) {
+      sessionsHtml = `
+        <div class="detail-section-title">time spent</div>
+        <div class="detail-row"><span class="detail-key">total time</span><span class="detail-val" style="color:#2e7d32;font-weight:700">${fmtDur(totalMins)}</span></div>
+        <div class="detail-row"><span class="detail-key">started</span><span class="detail-val">${sorted[0].date}</span></div>
+        <div class="detail-row"><span class="detail-key">finished</span><span class="detail-val">${sorted[sorted.length-1].date}</span></div>
+        <div class="detail-row"><span class="detail-key">sessions</span><span class="detail-val">${pSessions.length}</span></div>`;
+    } else {
+      sessionsHtml = `
+        <div class="detail-section-title">work log · ${fmtDur(totalMins)} so far</div>
+        ${pSessions.map(s => {
+          const fin = s.status.includes('Finish');
+          return `<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid #f5f5f0;font-size:11px">
+            <div class="dot ${fin ? 'dot-g' : 'dot-a'}" style="flex-shrink:0"></div>
+            <span style="flex:1;color:#666">${s.date}</span>
+            <span style="color:#aaa">${s.start}–${s.end || '…'}</span>
+            <span style="font-weight:600;min-width:34px;text-align:right">${s.duration || '…'}</span>
+          </div>`;
+        }).join('')}`;
+    }
+  }
+
+  panel.innerHTML = `
+    ${detailBackCtx ? `<div class="detail-back" onclick="goBack()">← ${detailBackCtx.name}</div>` : ''}
+    <div class="detail-img-placeholder" style="${p.image ? 'display:none' : ''}">🎨</div>
+    ${p.image ? `<img class="detail-img" src="${p.image}" onerror="this.style.display='none';this.previousElementSibling.style.display='flex'">` : ''}
+    <div class="detail-body">
+      <button class="detail-close" onclick="closeDetail()">✕</button>
+      <div class="detail-name">${p.name}</div>
+      <div class="detail-vendor">${p.vendor || ''}${p.type ? ' · ' + p.type : ''}</div>
+      <span class="badge ${b.cls}">${b.label}</span>
+      ${n > 0 ? `<div class="bar-wrap" style="margin-top:8px"><div class="bar-fill" style="width:${n}%;background:${barColor(n)}"></div></div>` : ''}
+      <div class="detail-section-title">details</div>
+      ${p.price    ? `<div class="detail-row"><span class="detail-key">price</span><span class="detail-val">$${p.price}</span></div>` : ''}
+      ${p.hours    ? `<div class="detail-row"><span class="detail-key">hours of crafting</span><span class="detail-val">${p.hours}</span></div>` : ''}
+      ${p.stickers ? `<div class="detail-row"><span class="detail-key">stickers</span><span class="detail-val">${p.stickers}</span></div>` : ''}
+      ${p.size     ? `<div class="detail-row"><span class="detail-key">size</span><span class="detail-val">${p.size}</span></div>` : ''}
+      ${p.colors   ? `<div class="detail-row"><span class="detail-key">colors</span><span class="detail-val">${p.colors}</span></div>` : ''}
+      ${coll       ? `<div class="detail-row"><span class="detail-key">collection</span><span class="detail-val">${coll.title}</span></div>` : ''}
+      ${launch     ? `<div class="detail-row"><span class="detail-key">launch</span><span class="detail-val">${launch.name} · ${launch.date}</span></div>` : ''}
+      ${sessionsHtml}
+      ${p.tags ? `<div class="detail-section-title">tags</div><div>${p.tags.split(',').map(t => `<span class="tag-pill">${t.trim()}</span>`).join('')}</div>` : ''}
+      <a class="detail-link" href="https://pixyls.ca/products/${p.handle}" target="_blank">view on pixyls.ca →</a>
+    </div>`;
+}
+
+function closeDetail() {
+  selectedHandle = null;
+  detailBackCtx  = null;
+  ['detail-panel','coll-detail-panel','launch-detail-panel'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.classList.remove('open');
+  });
+  document.querySelectorAll('[data-handle]').forEach(c => c.classList.remove('selected'));
+}
+
+function goBack() {
+  const ctx = detailBackCtx;
+  detailBackCtx  = null;
+  selectedHandle = null;
+  document.querySelectorAll('[data-handle]').forEach(c => c.classList.remove('selected'));
+  if (!ctx) return;
+  if (ctx.type === 'collection') openCollectionDetail(ctx.handle);
+  else if (ctx.type === 'launch') openLaunchDetail(ctx.handle);
+}
+
+// ── Home page ────────────────────────────────────────────────────
+function renderHome() {
+  const total    = DATA.products.length;
+  const ownedN   = DATA.products.filter(p => owned(p.handle)).length;
+  const pctAll   = total ? Math.round(ownedN / total * 100) : 0;
+  const totalDur = DATA.sessions.reduce((acc, s) => acc + parseDuration(s.duration), 0);
+  const today    = new Date(); today.setHours(0,0,0,0);
+  const upcoming = DATA.launches.slice()
+    .sort((a,b) => new Date(a.date) - new Date(b.date))
+    .find(l => { const d = new Date(l.date); return !isNaN(d) && d >= today; });
+
+  document.getElementById('home').innerHTML = `
+    <div class="stats">
+      <div class="stat"><div class="stat-label">products owned</div><div class="stat-value">${ownedN}</div><div class="stat-sub">of ${total} total</div></div>
+      <div class="stat"><div class="stat-label">collection %</div><div class="stat-value">${pctAll}%</div></div>
+      <div class="stat"><div class="stat-label">hours tracked</div><div class="stat-value">${fmtDur(totalDur)}</div></div>
+      <div class="stat"><div class="stat-label">next launch</div><div class="stat-value" style="font-size:13px;padding-top:4px">${upcoming ? upcoming.name : '—'}</div><div class="stat-sub">${upcoming ? upcoming.date : ''}</div></div>
+    </div>
+    <div class="section">
+      <input type="text" id="search" placeholder="search products…" oninput="filterProducts(this.value)">
+      <div class="filter-row">
+        <button class="filter-btn on" onclick="toggleFilter(this,'all')">all</button>
+        <button class="filter-btn" onclick="toggleFilter(this,'finished')">finished</button>
+        <button class="filter-btn" onclick="toggleFilter(this,'in progress')">in progress</button>
+        <button class="filter-btn" onclick="toggleFilter(this,'not started')">not started</button>
+        <button class="filter-btn" onclick="toggleFilter(this,'not owned')">not owned</button>
+      </div>
+      <div class="home-layout">
+        <div class="home-main"><div class="grid-4" id="products-grid"></div></div>
+        <div class="detail-panel" id="detail-panel"></div>
+      </div>
+    </div>`;
+  filterProducts('');
+}
+
+let activeFilter = 'all';
+function toggleFilter(btn, f) {
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+  activeFilter = f;
+  filterProducts(document.getElementById('search') ? document.getElementById('search').value : '');
+}
+
+function filterProducts(q) {
+  let list = DATA.products;
+  if (activeFilter === 'not owned') {
+    list = list.filter(p => !owned(p.handle));
+  } else {
+    list = list.filter(p => owned(p.handle));
+    if (activeFilter === 'finished')    list = list.filter(p => pct(p.handle) >= 100);
+    if (activeFilter === 'in progress') list = list.filter(p => { const n = pct(p.handle); return n > 0 && n < 100; });
+    if (activeFilter === 'not started') list = list.filter(p => pct(p.handle) === 0);
+  }
+  if (q) list = list.filter(p => p.name.toLowerCase().includes(q.toLowerCase()));
+  renderProducts(list);
+}
+
+function renderProducts(list) {
+  const grid = document.getElementById('products-grid');
+  if (!grid) return;
+  grid.innerHTML = list.slice(0, 80).map(p => {
+    const n   = pct(p.handle);
+    const b   = badgeLabel(p.handle);
+    const sel = p.handle === selectedHandle;
+    return `<div class="card${sel ? ' selected' : ''}" data-handle="${p.handle}" onclick="openDetail('${p.handle}')">
+      <div class="card-img-placeholder" style="${p.image ? 'display:none' : ''}">🎨</div>
+      ${p.image ? `<img class="card-img" src="${p.image}" loading="lazy" onerror="this.style.display='none';this.previousElementSibling.style.display='flex'">` : ''}
+      <div class="card-body">
+        <div class="card-name">${p.name}</div>
+        <div class="card-meta">${p.vendor || ''}${p.price ? ' · $' + p.price : ''}</div>
+        <div class="bar-wrap"><div class="bar-fill" style="width:${n}%;background:${barColor(n)}"></div></div>
+        <div style="margin-top:6px"><span class="badge ${b.cls}">${b.label}</span></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── Collections page ─────────────────────────────────────────────
+let selectedCollHandle = null;
+
+function collMembers(handle) {
+  const c = DATA.collections.find(x => x.handle === handle);
+  if (c && c.productHandles && c.productHandles.length) {
+    return DATA.products.filter(p => c.productHandles.includes(p.handle));
+  }
+  return DATA.products.filter(p => p.tags && p.tags.toLowerCase().split(',').map(t => t.trim()).includes(handle));
+}
+
+function renderCollections() {
+  document.getElementById('collections').innerHTML = `
+    <div class="home-layout">
+      <div class="home-main"><div class="grid-3" id="coll-grid"></div></div>
+      <div class="detail-panel" id="coll-detail-panel"></div>
+    </div>`;
+  renderCollectionCards();
+}
+
+function renderCollectionCards() {
+  const grid = document.getElementById('coll-grid');
+  if (!grid) return;
+  grid.innerHTML = DATA.collections.map(c => {
+    const members = collMembers(c.handle);
+    const ownedN  = members.filter(p => owned(p.handle)).length;
+    const finN    = members.filter(p => pct(p.handle) >= 100).length;
+    const inProgN = members.filter(p => { const n = pct(p.handle); return n > 0 && n < 100; }).length;
+    const isSel   = c.handle === selectedCollHandle;
+    return `<div class="card${isSel ? ' selected' : ''}" data-coll="${c.handle}" onclick="openCollectionDetail('${c.handle}')">
+      <div class="coll-banner" style="background:${bannerBg(c.handle)};position:relative">
+        ${c.banner ? `<img src="${c.banner}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0.55" onerror="this.remove()">` : ''}
+        <span class="pill" style="position:relative">${c.count || members.length} items</span>
+      </div>
+      <div class="card-body">
+        <div class="card-name">${c.title}</div>
+        <div class="card-meta">updated ${fmtDate(c.updated)}</div>
+        <div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap">
+          ${finN    ? `<span class="badge badge-done">${finN} finished</span>` : ''}
+          ${inProgN ? `<span class="badge badge-prog">${inProgN} in progress</span>` : ''}
+          ${(ownedN-finN-inProgN) > 0 ? `<span class="badge badge-unstarted">${ownedN-finN-inProgN} not started</span>` : ''}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function openCollectionDetail(handle) {
+  selectedCollHandle = handle;
+  detailBackCtx = null;
+  document.querySelectorAll('#coll-grid .card').forEach(c => c.classList.remove('selected'));
+  document.querySelectorAll(`[data-coll="${handle}"]`).forEach(c => c.classList.add('selected'));
+  const c = DATA.collections.find(x => x.handle === handle);
+  if (!c) return;
+  const members = collMembers(handle);
+  const ownedN  = members.filter(p => owned(p.handle)).length;
+  const finN    = members.filter(p => pct(p.handle) >= 100).length;
+  const inProgN = members.filter(p => { const n = pct(p.handle); return n > 0 && n < 100; }).length;
+  const panel   = document.getElementById('coll-detail-panel');
+  panel.classList.add('open');
+  panel.scrollTop = 0;
+  panel.innerHTML = `
+    <div style="height:90px;background:${bannerBg(handle)};display:flex;align-items:flex-end;padding:10px 16px;position:relative">
+      ${c.banner ? `<img src="${c.banner}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0.5" onerror="this.remove()">` : ''}
+      <button style="position:absolute;top:8px;right:10px;background:none;border:none;font-size:18px;cursor:pointer;color:#666;z-index:1" onclick="closeCollectionDetail()">✕</button>
+    </div>
+    <div class="detail-body">
+      <div class="detail-name">${c.title}</div>
+      <div class="detail-vendor">updated ${fmtDate(c.updated)}</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:4px">
+        ${finN    ? `<span class="badge badge-done">${finN} finished</span>` : ''}
+        ${inProgN ? `<span class="badge badge-prog">${inProgN} in progress</span>` : ''}
+        ${(ownedN-finN-inProgN) > 0 ? `<span class="badge badge-unstarted">${ownedN-finN-inProgN} not started</span>` : ''}
+        ${(members.length-ownedN) > 0 ? `<span class="badge badge-no">${members.length-ownedN} not owned</span>` : ''}
+      </div>
+      <div class="detail-section-title">${members.length} products</div>
+      ${members.map(p => {
+        const b = badgeLabel(p.handle);
+        return `<div class="prod-row" onclick="openDetailFromCtx('${p.handle}','collection','${handle}','${c.title.replace(/'/g,"\\'")}')">
+          <div class="prod-thumb">${p.image ? `<img src="${p.image}" onerror="this.style.display='none'">` : '🎨'}</div>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:11px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.name}</div>
+            <div style="font-size:10px;color:#999">${p.vendor || ''}</div>
+          </div>
+          <span class="badge ${b.cls}" style="flex-shrink:0">${b.label}</span>
+        </div>`;
+      }).join('')}
+    </div>`;
+}
+
+function closeCollectionDetail() {
+  selectedCollHandle = null;
+  const panel = document.getElementById('coll-detail-panel');
+  if (panel) panel.classList.remove('open');
+  document.querySelectorAll('#coll-grid .card').forEach(c => c.classList.remove('selected'));
+}
+
+// ── Launches page ────────────────────────────────────────────────
+let selectedLaunchHandle = null;
+
+function launchMembers(l) {
+  const lHandle = (l.handle || '').toLowerCase();
+  const lName   = (l.name || '').toLowerCase().replace(/\s+/g, '-');
+  return DATA.products.filter(p => {
+    if (!p.tags) return false;
+    const tags = p.tags.toLowerCase().split(',').map(t => t.trim());
+    return tags.some(t => t === lHandle || t === lName);
+  });
+}
+
+function daysAway(dateStr) {
+  const today = new Date(); today.setHours(0,0,0,0);
+  const d = new Date(dateStr); if (isNaN(d)) return null;
+  const diff = Math.round((d - today) / 86400000);
+  if (diff === 0) return 'today';
+  if (diff > 0)   return `in ${diff} day${diff===1?'':'s'}`;
+  return `${Math.abs(diff)}d ago`;
+}
+
+function renderLaunches() {
+  const today    = new Date(); today.setHours(0,0,0,0);
+  const sorted   = DATA.launches.slice().sort((a,b) => new Date(a.date) - new Date(b.date));
+  const upcoming = sorted.filter(l => { const d = new Date(l.date); return !isNaN(d) && d >= today; });
+  const past     = sorted.filter(l => { const d = new Date(l.date); return isNaN(d) || d < today; }).reverse();
+
+  function launchCard(l, isPast) {
+    const members = launchMembers(l);
+    const finN    = members.filter(p => pct(p.handle) >= 100).length;
+    const progN   = members.filter(p => { const n = pct(p.handle); return n > 0 && n < 100; }).length;
+    const ownedN  = members.filter(p => owned(p.handle)).length;
+    const away    = daysAway(l.date);
+    const isSel   = l.handle === selectedLaunchHandle;
+    return `<div class="launch-row${isSel ? ' selected' : ''}" data-launch="${l.handle}" style="flex-direction:column;align-items:stretch;gap:8px;padding:14px;cursor:pointer" onclick="openLaunchDetail('${l.handle}')">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <span class="launch-name">${l.name}</span>
+        <span style="display:flex;gap:6px;align-items:center">
+          ${away ? `<span style="font-size:11px;padding:2px 8px;border-radius:20px;background:${isPast?'#f5f5f5':'#e3f2fd'};color:${isPast?'#999':'#1565c0'}">${away}</span>` : ''}
+          <span class="launch-date">${l.date}</span>
+        </span>
+      </div>
+      ${members.length ? `<div style="display:flex;gap:6px;flex-wrap:wrap">
+        ${finN  ? `<span class="badge badge-done">${finN} done</span>` : ''}
+        ${progN ? `<span class="badge badge-prog">${progN} in progress</span>` : ''}
+        ${(ownedN-finN-progN) > 0 ? `<span class="badge badge-unstarted">${ownedN-finN-progN} not started</span>` : ''}
+        ${(members.length-ownedN) > 0 ? `<span class="badge badge-no">${members.length-ownedN} not owned</span>` : ''}
+      </div>` : ''}
+    </div>`;
+  }
+
+  document.getElementById('launches').innerHTML = `
+    <div class="home-layout">
+      <div class="home-main">
+        ${upcoming.length ? `<h2 style="margin-bottom:10px">upcoming</h2>${upcoming.map(l => launchCard(l, false)).join('')}<div style="margin-bottom:20px"></div>` : ''}
+        ${past.length ? `<h2 style="margin-bottom:10px">past launches</h2>${past.map(l => launchCard(l, true)).join('')}` : ''}
+        ${!upcoming.length && !past.length ? '<p style="color:#999;font-size:13px">No launches found.</p>' : ''}
+      </div>
+      <div class="detail-panel" id="launch-detail-panel"></div>
+    </div>`;
+}
+
+function openLaunchDetail(handle) {
+  selectedLaunchHandle = handle;
+  detailBackCtx = null;
+  document.querySelectorAll('[data-launch]').forEach(c => c.classList.remove('selected'));
+  document.querySelectorAll(`[data-launch="${handle}"]`).forEach(c => c.classList.add('selected'));
+  const l = DATA.launches.find(x => x.handle === handle);
+  if (!l) return;
+  const members = launchMembers(l);
+  const finN    = members.filter(p => pct(p.handle) >= 100).length;
+  const progN   = members.filter(p => { const n = pct(p.handle); return n > 0 && n < 100; }).length;
+  const ownedN  = members.filter(p => owned(p.handle)).length;
+  const away    = daysAway(l.date);
+  const panel   = document.getElementById('launch-detail-panel');
+  panel.classList.add('open');
+  panel.scrollTop = 0;
+  panel.innerHTML = `
+    <div class="detail-body">
+      <button class="detail-close" onclick="closeLaunchDetail()">✕</button>
+      <div class="detail-name">${l.name}</div>
+      <div class="detail-vendor">${l.date}${away ? ` · ${away}` : ''}</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:4px">
+        ${finN  ? `<span class="badge badge-done">${finN} finished</span>` : ''}
+        ${progN ? `<span class="badge badge-prog">${progN} in progress</span>` : ''}
+        ${(ownedN-finN-progN) > 0 ? `<span class="badge badge-unstarted">${ownedN-finN-progN} not started</span>` : ''}
+        ${(members.length-ownedN) > 0 ? `<span class="badge badge-no">${members.length-ownedN} not owned</span>` : ''}
+      </div>
+      <div class="detail-section-title">${members.length} products</div>
+      ${members.map(p => {
+        const b = badgeLabel(p.handle);
+        return `<div class="prod-row" onclick="openDetailFromCtx('${p.handle}','launch','${handle}','${l.name.replace(/'/g,"\\'")}')">
+          <div class="prod-thumb">${p.image ? `<img src="${p.image}" onerror="this.style.display='none'">` : '🎨'}</div>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:11px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.name}</div>
+            <div style="font-size:10px;color:#999">${p.vendor || ''}</div>
+          </div>
+          <span class="badge ${b.cls}" style="flex-shrink:0">${b.label}</span>
+        </div>`;
+      }).join('')}
+    </div>`;
+}
+
+function closeLaunchDetail() {
+  selectedLaunchHandle = null;
+  const panel = document.getElementById('launch-detail-panel');
+  if (panel) panel.classList.remove('open');
+  document.querySelectorAll('[data-launch]').forEach(c => c.classList.remove('selected'));
+}
+
+// ── Worklog page ─────────────────────────────────────────────────
+function renderWorklog() {
+  document.getElementById('worklog').innerHTML = `
+    <div class="section">
+      <h2>recent sessions</h2>
+      ${DATA.sessions.map(s => {
+        const fin = s.status.includes('Finish'), pau = s.status.includes('Pause');
+        const cls = fin ? 's-done' : pau ? 's-pause' : 's-prog';
+        return `<div class="log-row">
+          <div class="dot ${fin ? 'dot-g' : 'dot-a'}"></div>
+          <span class="log-name">${s.product}</span>
+          <span class="log-time">${s.date} · ${s.start}–${s.end}</span>
+          <span class="log-dur">${s.duration}</span>
+          <span class="log-status ${cls}">${s.status.replace('✅','').replace('⏸','').trim()}</span>
+        </div>`;
+      }).join('')}
+    </div>`;
+}
+
+// ── Utilities ────────────────────────────────────────────────────
+function bannerBg(handle) {
+  const colors = ['#e8d5c0','#c8e0b8','#b8c8e0','#e0c8d8','#d8e0c0','#c8d8e8'];
+  let h = 0; for (const c of (handle||'')) h = (h * 31 + c.charCodeAt(0)) & 0xffffffff;
+  return colors[Math.abs(h) % colors.length];
+}
+
+function fmtDate(str) {
+  if (!str) return '';
+  const d = new Date(str);
+  if (isNaN(d)) return str;
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+function parseDuration(str) {
+  if (!str) return 0;
+  let m = 0;
+  const h = str.match(/(\d+)h/); if (h) m += parseInt(h[1]) * 60;
+  const min = str.match(/(\d+)m/); if (min) m += parseInt(min[1]);
+  return m;
+}
+
+function fmtDur(mins) {
+  const h = Math.floor(mins/60), m = mins % 60;
+  return h > 0 ? h + 'h ' + m + 'm' : m + 'm';
+}
+
+init();
+</script>
+</body>
+</html>
