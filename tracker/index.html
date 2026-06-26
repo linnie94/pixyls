@@ -90,6 +90,7 @@
   @keyframes spin { to { transform: rotate(360deg); } }
   #error-msg { display: none; padding: 24px; text-align: center; color: #c00; font-size: 13px; }
 </style>
+<script src="config.js"></script>
 </head>
 <body>
 <nav>
@@ -111,10 +112,6 @@
 <div id="worklog" class="page"></div>
 
 <script>
-// ── CONFIG — paste your Apps Script /exec URL here ──────────────
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxEs7f660GKDNGV9VyD8SKaS2j5k6rMN0DE841gjA-9HFSVT6E1YpZLQmEyD4eoBkMQiA/exec';
-// ────────────────────────────────────────────────────────────────
-
 let DATA = null;
 
 async function init() {
@@ -211,7 +208,7 @@ function openDetail(handle) {
         <div class="detail-row"><span class="detail-key">sessions</span><span class="detail-val">${pSessions.length}</span></div>`;
     } else {
       sessionsHtml = `
-        <div class="detail-section-title">work log · ${fmtDur(totalMins)} so far</div>
+        <div class="detail-section-title">work log · ${fmtDur(totalMins)} so far${n > 0 ? ' · ' + n + '%' : ''}</div>
         ${pSessions.map(s => {
           const fin = s.status.includes('Finish');
           return `<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid #f5f5f0;font-size:11px">
@@ -219,6 +216,7 @@ function openDetail(handle) {
             <span style="flex:1;color:#666">${s.date}</span>
             <span style="color:#aaa">${s.start}–${s.end || '…'}</span>
             <span style="font-weight:600;min-width:34px;text-align:right">${s.duration || '…'}</span>
+            ${s.pct !== '' && s.pct !== undefined ? `<span style="font-size:10px;color:#999;min-width:28px;text-align:right">${s.pct}%</span>` : ''}
           </div>`;
         }).join('')}`;
     }
@@ -566,6 +564,7 @@ function renderWorklog() {
           <span class="log-name">${s.product}</span>
           <span class="log-time">${s.date} · ${s.start}–${s.end}</span>
           <span class="log-dur">${s.duration}</span>
+          ${s.pct !== '' && s.pct !== undefined ? `<span style="font-size:11px;color:#999;min-width:32px;text-align:right">${s.pct}%</span>` : ''}
           <span class="log-status ${cls}">${s.status.replace('✅','').replace('⏸','').trim()}</span>
         </div>`;
       }).join('')}
